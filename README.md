@@ -12,8 +12,8 @@ repetido. Um relatório em **Python** mede todo dia quanto foi gasto e quanto fo
 Este repositório reproduz a **mesma lógica em Python puro**, com **dados 100% fictícios**, para mostrar
 o raciocínio em código e com testes. Nenhum dado, nome, regra comercial ou arquivo da empresa está aqui.
 
-> Na operação real, a trava economiza em média **cerca de R$ 1,8 mil por dia**, perto de 40% do custo de
-> disparo. Os valores deste repositório são fictícios.
+> Na operação real, a trava economizou **cerca de R$ 22,5 mil em 11 dias de envio** (≈ R$ 2 mil por dia).
+> Os valores deste repositório são fictícios.
 
 ## Como funciona
 
@@ -21,7 +21,8 @@ o raciocínio em código e com testes. Nenhum dado, nome, regra comercial ou arq
 flowchart LR
     A[(Carteira<br/>CSV / SQL Server)] --> B[Limpeza<br/>CPF/CNPJ · celular · duplicados]
     B --> C[Segmentação<br/>faixa de atraso → canal]
-    C --> D{Trava<br/>já contatado?}
+    R[Respostas da campanha<br/>IA ou regras] --> D
+    C --> D{Trava<br/>já contatado ou<br/>pediu para parar?}
     D -- sim --> E[(Bloqueio<br/>com motivo)]
     D -- não --> F[Disparo por API<br/>lotes de 1.000]
     E --> G[Relatório Excel<br/>gasto × economia]
@@ -33,6 +34,7 @@ flowchart LR
 | Limpeza | [`cobranca/limpeza.py`](cobranca/limpeza.py) | valida CPF/CNPJ pelos dígitos verificadores, recoloca zeros perdidos pelo Excel, escolhe o primeiro celular válido e mantém um contrato por pessoa |
 | Segmentação | [`cobranca/segmentacao.py`](cobranca/segmentacao.py) | separa por faixa de atraso (aviso, 05–30, 31–120, 121–990), escolhe o canal e ordena por valor em aberto |
 | Trava | [`sql/trava_envio.sql`](sql/trava_envio.sql) · [`cobranca/trava.py`](cobranca/trava.py) | tira da fila quem já recebeu no mesmo canal dentro do intervalo mínimo e registra o motivo (T-SQL no trabalho, SQLite aqui para rodar sem servidor) |
+| Respostas (IA) | [`cobranca/respostas.py`](cobranca/respostas.py) | classifica as respostas dos clientes (já pagou, número errado, pediu para parar, quer negociar, pediu boleto) com o **Claude** e saída em JSON validada por esquema; sem credencial, usa regras de palavras-chave. Quem pediu para parar sai da próxima campanha; quem quer negociar vai para um atendente |
 | Disparo | [`cobranca/disparo.py`](cobranca/disparo.py) | monta o JSON da campanha e envia em lotes; por padrão roda simulado e só grava os arquivos |
 | Relatório | [`cobranca/relatorio.py`](cobranca/relatorio.py) | planilha com enviados, bloqueados, gasto, economia e % por canal e faixa, mais os motivos de descarte |
 
@@ -44,17 +46,30 @@ Como cada nó do KNIME virou código: [docs/knime-para-python.md](docs/knime-par
 pip install -r requirements.txt
 python dados/gerar_exemplo.py          # gera a carteira e o histórico fictícios
 python -m cobranca.pipeline            # roda tudo e grava saida/relatorio_AAAA-MM-DD.xlsx
-python -m unittest discover -s tests   # 11 testes
+python -m unittest discover -s tests   # 18 testes, sem chamar nenhuma API
 ```
 
 Saída com os dados de exemplo:
 
 ```
 contatos válidos: 460  descartes: {'documento inválido': 34, 'sem celular válido': 114, 'duplicado': 22}
-bloqueados pela trava: 39  lotes enviados (simulado): 4
-gasto: R$ 85.74  economia: R$ 10.08  (11% do custo)
+bloqueados (trava + respostas): 67  lotes enviados (simulado): 4
+respostas classificadas por: regras  encaminhados ao atendimento: 22
+gasto: R$ 78.06  economia: R$ 17.76  (19% do custo)
 relatório: saida/relatorio_2026-10-26.xlsx
 ```
+
+### Classificar as respostas com IA
+
+```bash
+pip install -e ".[ia]"                 # instala o SDK da Anthropic
+export ANTHROPIC_API_KEY=...           # ou: ant auth login
+python -m cobranca.pipeline --ia
+```
+
+O modelo recebe as respostas em lotes de 50 e devolve um JSON validado por esquema (só as 6 intenções
+permitidas). O que ele não devolver, ou um lote recusado, cai para as regras: nenhuma resposta fica sem
+classificação. Os testes usam um cliente falso, então a CI nunca chama a API.
 
 Para um envio real, defina `COBRANCA_API_URL` (https) e `COBRANCA_API_TOKEN` e chame
 `executar(..., dry_run=False)`. A API usada aqui é genérica e fictícia.
@@ -66,7 +81,9 @@ Para um envio real, defina `COBRANCA_API_URL` (https) e `COBRANCA_API_TOKEN` e c
 - **Todo descarte tem motivo.** O relatório mostra por que cada contato saiu (documento inválido, sem
   celular, duplicado, já contatado). É isso que permite calcular a economia.
 - **Simulado por padrão.** Rodar o projeto nunca dispara mensagem de verdade.
-- **Só biblioteca padrão + openpyxl.** Fácil de rodar em qualquer máquina e no CI.
+- **IA onde ela ajuda, com plano B.** Entender "já paguei, mas foi pelo app" é difícil para regra fixa e fácil
+  para um modelo de linguagem. Mesmo assim, o pipeline funciona sem a IA, e as duas formas devolvem o mesmo formato.
+- **Só biblioteca padrão + openpyxl.** O SDK da Anthropic é opcional. Fácil de rodar em qualquer máquina e no CI.
 
 ## Estrutura
 

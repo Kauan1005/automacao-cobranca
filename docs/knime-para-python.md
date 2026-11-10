@@ -13,6 +13,7 @@ função que faz o mesmo papel neste repositório. Os fluxos reais não estão a
 | DB SQL Executor | roda a trava em T-SQL antes do envio | `sql/trava_envio.sql` · `trava.aplicar_trava` |
 | Chunk Loop Start · JSON Row Combiner · POST Request | monta o JSON e envia em lotes para a API | `disparo.payload_campanha` · `lotes` · `ClienteApi` |
 | Python Script | gera o relatório diário de custo e economia | `relatorio.resumo` · `salvar_excel` |
+| (novo, só aqui) | entende as respostas dos clientes com IA | `respostas.classificar` · `trava.aplicar_respostas` |
 
 ## Por que reescrever em Python
 
