@@ -1,8 +1,9 @@
 /*
   Trava anti-reenvio (T-SQL, SQL Server).
-  Roda imediatamente antes do disparo: quem já recebeu mensagem no mesmo canal dentro do
-  intervalo mínimo sai da fila, e o motivo fica registrado para auditoria e para o cálculo
-  da economia no relatório. Nomes de tabelas e colunas são fictícios.
+  Roda logo antes do disparo: quem já recebeu mensagem no mesmo canal
+  dentro do intervalo mínimo sai da fila, e o motivo fica registrado
+  para auditoria e para o cálculo da economia no relatório.
+  Nomes de tabelas e colunas são fictícios.
 */
 DECLARE @hoje date = CAST(GETDATE() AS date);
 DECLARE @intervalo_dias int = 3;

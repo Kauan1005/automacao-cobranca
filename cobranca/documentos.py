@@ -8,7 +8,10 @@ _SO_DIGITOS = re.compile(r"\D")
 
 
 def so_digitos(valor: str | int | None) -> str:
-    """Remove pontuação e espaços. Planilhas costumam perder o zero à esquerda, então ele é recolocado depois."""
+    """Remove pontuação e espaços.
+
+    O zero à esquerda que a planilha perde é recolocado depois, pelo zfill.
+    """
     if valor is None:
         return ""
     return _SO_DIGITOS.sub("", str(valor))
@@ -37,7 +40,7 @@ def cnpj_valido(cnpj: str) -> bool:
 
 
 def normalizar_documento(valor: str | int | None) -> tuple[str, str] | None:
-    """Devolve (tipo, documento) com zeros à esquerda, ou None se o documento for inválido.
+    """Devolve (tipo, documento) com zeros à esquerda, ou None se inválido.
 
     >>> normalizar_documento("529.982.247-25")
     ('cpf', '52998224725')
