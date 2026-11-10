@@ -51,3 +51,19 @@ def aplicar_trava(con: sqlite3.Connection, hoje: date, intervalo_dias: int = 3) 
             (hoje.isoformat(),),
         )
     return cur.rowcount
+
+
+def aplicar_respostas(con: sqlite3.Connection, bloqueios: dict[str, str], hoje: date) -> int:
+    """Tira da fila quem respondeu que já pagou, que o número é errado ou que quer parar.
+
+    `bloqueios` vem de respostas.bloqueios(): contato_id -> motivo.
+    """
+    alvo = [
+        (contato_id, canal, f"resposta: {bloqueios[contato_id]}", custo, hoje.isoformat())
+        for contato_id, canal, custo in con.execute("SELECT contato_id, canal, custo FROM fila")
+        if contato_id in bloqueios
+    ]
+    with con:
+        con.executemany("INSERT INTO bloqueio VALUES (?, ?, ?, ?, ?)", alvo)
+        con.executemany("DELETE FROM fila WHERE contato_id = ? AND canal = ?", [(a[0], a[1]) for a in alvo])
+    return len(alvo)

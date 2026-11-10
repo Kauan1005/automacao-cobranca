@@ -93,7 +93,35 @@ def gerar(n: int = 600, semente: int = 42) -> None:
         w = csv.DictWriter(f, fieldnames=["contato_id", "canal", "enviado_em"], delimiter=";")
         w.writeheader()
         w.writerows(hist)
-    print(f"{len(linhas)} contratos e {len(hist)} envios anteriores gerados em {AQUI}")
+
+    # respostas à campanha anterior, escritas do jeito que as pessoas escrevem
+    resp = []
+    for i, ln in enumerate(rng.sample(linhas, 90)):
+        doc = normalizar_documento(ln["documento"])
+        if doc:
+            resp.append({"id": f"R{i + 1:03d}", "contato_id": doc[1], "texto": rng.choice(RESPOSTAS)})
+    with (AQUI / "respostas_exemplo.csv").open("w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=["id", "contato_id", "texto"], delimiter=";")
+        w.writeheader()
+        w.writerows(resp)
+    print(f"{len(linhas)} contratos, {len(hist)} envios anteriores e {len(resp)} respostas gerados em {AQUI}")
+
+
+RESPOSTAS = [
+    "Já paguei ontem, vou mandar o comprovante",
+    "paguei semana passada",
+    "Quero fazer um acordo, dá pra parcelar?",
+    "tem desconto pra pagar à vista?",
+    "Me manda o boleto por favor",
+    "pode mandar o pix?",
+    "Não sou eu, número errado",
+    "não conheço esse contrato, engano",
+    "Para de me mandar mensagem",
+    "não me mande mais nada",
+    "ok",
+    "quem é?",
+    "vou ver e te retorno",
+]
 
 
 if __name__ == "__main__":
