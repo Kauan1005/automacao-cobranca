@@ -97,4 +97,4 @@ docs/          mapeamento dos nós KNIME para as funções Python
 
 ---
 
-Kauan Ribeiro Almeida · [portfólio](https://kauanportfolio.netlify.app) · [LinkedIn](https://www.linkedin.com/in/kauan-ribeiro)
+Kauan Ribeiro Almeida · [portfólio](https://ribeiroportfolio.netlify.app) · [LinkedIn](https://www.linkedin.com/in/kauan-ribeiro)
